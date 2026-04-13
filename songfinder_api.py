@@ -54,6 +54,7 @@ def _parse_response(api_response: dict):
     if not result:
         return None
 
+    # --- Coverbild ---
     cover_url = None
     spotify_data = result.get("spotify")
     if spotify_data:
@@ -61,9 +62,19 @@ def _parse_response(api_response: dict):
         if images:
             cover_url = images[0].get("url")
 
+    # --- Genre (über Spotify-Künstlerdaten) ---
+    genres = []
+    if spotify_data:
+        artists = spotify_data.get("artists", [])
+        if artists:
+            genres = artists[0].get("genres", [])
+
+    genre_text = ", ".join(genres) if genres else "Unbekannt"
+
     return {
         "title": result.get("title"),
         "artist": result.get("artist"),
         "album": result.get("album"),
+        "genre": genre_text,
         "cover": cover_url
     }
