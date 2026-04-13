@@ -11,16 +11,14 @@ st.set_page_config(
 )
 
 st.title("🎵 Song-Erkennungs-App")
-st.write(
-    "Diese App erkennt Songs mithilfe einer KI-gestützten Musikerkennungs-API."
-)
+st.write("Erkennt Songs und ermittelt Genre-Tags aus einer offenen Musikdatenbank.")
 
 # API-Key prüfen
 if not api_key_available():
     st.error(
         "❌ Kein API-Key gefunden.\n\n"
-        "Bitte hinterlege den API-Key als Umgebungsvariable "
-        "`AUDD_API_KEY` (z. B. über Streamlit Secrets)."
+        "Bitte setze die Umgebungsvariable `AUDD_API_KEY` "
+        "(z. B. über Streamlit Secrets)."
     )
     st.stop()
 
@@ -33,7 +31,6 @@ eingabe = st.radio(
 
 ergebnis = None
 
-# --- Datei-Upload ---
 if eingabe == "Audiodatei hochladen":
     datei = st.file_uploader(
         "Audiodatei auswählen (MP3 oder WAV)",
@@ -44,7 +41,6 @@ if eingabe == "Audiodatei hochladen":
         with st.spinner("🎧 Song wird erkannt..."):
             ergebnis = recognize_song_from_file(datei)
 
-# --- URL-Eingabe ---
 elif eingabe == "Audio-URL eingeben":
     url = st.text_input("Audio-URL eingeben")
 
@@ -52,15 +48,23 @@ elif eingabe == "Audio-URL eingeben":
         with st.spinner("🌐 Song wird erkannt..."):
             ergebnis = recognize_song_from_url(url)
 
-# --- Ergebnis anzeigen ---
+# -----------------------------
+# Ergebnisanzeige
+# -----------------------------
 if ergebnis:
-    st.success("✅ Song erfolgreich erkannt!")
+    st.success("✅ Song erkannt!")
 
     st.subheader("🎶 Erkannte Informationen")
     st.write(f"**Titel:** {ergebnis.get('title', 'Unbekannt')}")
     st.write(f"**Künstler:** {ergebnis.get('artist', 'Unbekannt')}")
     st.write(f"**Album:** {ergebnis.get('album', 'Unbekannt')}")
-    st.write(f"**Genre:** {ergebnis.get('genre', 'Unbekannt')}")
+
+    genres = ergebnis.get("genre", [])
+    if genres:
+        st.write("**Genres:**")
+        st.markdown(" • " + " • ".join(genres))
+    else:
+        st.write("**Genres:** Unbekannt")
 
     if ergebnis.get("cover"):
         st.image(ergebnis["cover"], caption="Coverbild")
