@@ -10,9 +10,9 @@ AUDD_API_KEY = os.getenv("AUDD_API_KEY")
 # -----------------------------
 # MusicBrainz (Genres)
 # -----------------------------
-MUSICBRAINZ_SEARCH_URL = "https://musicbrainz.org/ws/2/recording/"
+MUSICBRAINZ_BASE_URL = "https://musicbrainz.org/ws/2"
 MUSICBRAINZ_HEADERS = {
-    "User-Agent": "SongErkennungSchulprojekt/1.0 (kontakt@schule.de)"
+    "User-Agent": "SongErkennungSchulprojekt/1.0 (schule@example.de)"
 }
 
 
@@ -20,9 +20,9 @@ def api_key_available() -> bool:
     return AUDD_API_KEY is not None and AUDD_API_KEY.strip() != ""
 
 
-# -----------------------------
+# =========================================================
 # Öffentliche Funktionen
-# -----------------------------
+# =========================================================
 def recognize_song_from_file(audio_file):
     files = {
         "file": (audio_file.name, audio_file, audio_file.type)
@@ -59,9 +59,9 @@ def recognize_song_from_url(audio_url: str):
     return _parse_audd_response(response.json())
 
 
-# -----------------------------
-# Interne Helferfunktionen
-# -----------------------------
+# =========================================================
+# AudD → MusicBrainz Auswertung
+# =========================================================
 def _parse_audd_response(api_response: dict):
     if api_response.get("status") != "success":
         return None
@@ -82,8 +82,8 @@ def _parse_audd_response(api_response: dict):
         if images:
             cover_url = images[0].get("url")
 
-    # 🎯 Genres über MusicBrainz
-    genres = _get_genres_from_musicbrainz(title, artist)
+    # 🎯 Genre-Fallback-Logik
+    genres = _get_genres_with_fallback(title, artist, album)
 
     return {
         "title": title,
@@ -94,22 +94,65 @@ def _parse_audd_response(api_response: dict):
     }
 
 
-def _get_genres_from_musicbrainz(title: str, artist: str) -> list[str]:
+# =========================================================
+# MusicBrainz Genre-Logik
+# =========================================================
+def _get_genres_with_fallback(title: str, artist: str, album: str) -> list[str]:
     """
-    Sucht nach Recording-Tags (Genres) bei MusicBrainz
+    1. Recording-Tags
+    2. Album-Tags (Release Group)
+    3. Artist-Tags
     """
-    if not title or not artist:
+    genres = _get_recording_genres(title, artist)
+    if genres:
+        return genres
+
+    genres = _get_album_genres(album, artist)
+    if genres:
+        return genres
+
+    genres = _get_artist_genres(artist)
+    return genres
+
+
+def _get_recording_genres(title: str, artist: str) -> list[str]:
+    return _search_musicbrainz(
+        endpoint="recording",
+        query=f'recording:"{title}" AND artist:"{artist}"'
+    )
+
+
+def _get_album_genres(album: str, artist: str) -> list[str]:
+    return _search_musicbrainz(
+        endpoint="release-group",
+        query=f'releasegroup:"{album}" AND artist:"{artist}"'
+    )
+
+
+def _get_artist_genres(artist: str) -> list[str]:
+    return _search_musicbrainz(
+        endpoint="artist",
+        query=f'artist:"{artist}"'
+    )
+
+
+def _search_musicbrainz(endpoint: str, query: str) -> list[str]:
+    """
+    Allgemeine Suche nach Tags bei MusicBrainz
+    """
+    if not query:
         return []
 
+    url = f"{MUSICBRAINZ_BASE_URL}/{endpoint}"
     params = {
-        "query": f'recording:"{title}" AND artist:"{artist}"',
+        "query": query,
         "fmt": "json",
         "limit": 1
     }
 
     try:
         response = requests.get(
-            MUSICBRAINZ_SEARCH_URL,
+            url,
             params=params,
             headers=MUSICBRAINZ_HEADERS,
             timeout=10
@@ -118,11 +161,10 @@ def _get_genres_from_musicbrainz(title: str, artist: str) -> list[str]:
     except Exception:
         return []
 
-    recordings = data.get("recordings", [])
-    if not recordings:
+    key = f"{endpoint}s"
+    results = data.get(key, [])
+    if not results:
         return []
 
-    tags = recordings[0].get("tags", [])
-    genres = [tag["name"].title() for tag in tags]
-
-    return genres
+    tags = results[0].get("tags", [])
+    return [tag["name"].title() for tag in tags]
