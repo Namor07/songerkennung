@@ -15,7 +15,7 @@ st.write(
     "Diese App erkennt Songs mithilfe einer KI-gestützten Musikerkennungs-API."
 )
 
-# Prüfen, ob ein API-Key vorhanden ist
+# API-Key prüfen
 if not api_key_available():
     st.error(
         "❌ Kein API-Key gefunden.\n\n"
@@ -26,7 +26,6 @@ if not api_key_available():
 
 st.divider()
 
-# Auswahl der Eingabemethode
 eingabe = st.radio(
     "Eingabemethode auswählen:",
     ("Audiodatei hochladen", "Audio-URL eingeben")
@@ -61,6 +60,7 @@ if ergebnis:
     st.write(f"**Titel:** {ergebnis.get('title', 'Unbekannt')}")
     st.write(f"**Künstler:** {ergebnis.get('artist', 'Unbekannt')}")
     st.write(f"**Album:** {ergebnis.get('album', 'Unbekannt')}")
+    st.write(f"**Genre:** {ergebnis.get('genre', 'Unbekannt')}")
 
     if ergebnis.get("cover"):
         st.image(ergebnis["cover"], caption="Coverbild")
