@@ -1,52 +1,68 @@
 import os
 import requests
 
-API_URL = "https://api.audd.io/"
-API_KEY = os.getenv("AUDD_API_KEY")
+# -----------------------------
+# AudD (Song-Erkennung)
+# -----------------------------
+AUDD_API_URL = "https://api.audd.io/"
+AUDD_API_KEY = os.getenv("AUDD_API_KEY")
+
+# -----------------------------
+# MusicBrainz (Genres)
+# -----------------------------
+MUSICBRAINZ_SEARCH_URL = "https://musicbrainz.org/ws/2/recording/"
+MUSICBRAINZ_HEADERS = {
+    "User-Agent": "SongErkennungSchulprojekt/1.0 (kontakt@schule.de)"
+}
 
 
 def api_key_available() -> bool:
-    """
-    Prüft, ob ein API-Key gesetzt ist
-    """
-    return API_KEY is not None and API_KEY.strip() != ""
+    return AUDD_API_KEY is not None and AUDD_API_KEY.strip() != ""
 
 
+# -----------------------------
+# Öffentliche Funktionen
+# -----------------------------
 def recognize_song_from_file(audio_file):
-    """
-    Erkennt einen Song anhand einer hochgeladenen Audiodatei
-    """
     files = {
         "file": (audio_file.name, audio_file, audio_file.type)
     }
 
     data = {
-        "api_token": API_KEY,
+        "api_token": AUDD_API_KEY,
         "return": "spotify"
     }
 
-    response = requests.post(API_URL, data=data, files=files, timeout=30)
-    return _parse_response(response.json())
+    response = requests.post(
+        AUDD_API_URL,
+        data=data,
+        files=files,
+        timeout=30
+    )
+
+    return _parse_audd_response(response.json())
 
 
 def recognize_song_from_url(audio_url: str):
-    """
-    Erkennt einen Song anhand einer Audio-URL
-    """
     data = {
-        "api_token": API_KEY,
+        "api_token": AUDD_API_KEY,
         "url": audio_url,
         "return": "spotify"
     }
 
-    response = requests.post(API_URL, data=data, timeout=30)
-    return _parse_response(response.json())
+    response = requests.post(
+        AUDD_API_URL,
+        data=data,
+        timeout=30
+    )
+
+    return _parse_audd_response(response.json())
 
 
-def _parse_response(api_response: dict):
-    """
-    Bereitet die API-Antwort verständlich auf
-    """
+# -----------------------------
+# Interne Helferfunktionen
+# -----------------------------
+def _parse_audd_response(api_response: dict):
     if api_response.get("status") != "success":
         return None
 
@@ -54,7 +70,11 @@ def _parse_response(api_response: dict):
     if not result:
         return None
 
-    # --- Coverbild ---
+    title = result.get("title")
+    artist = result.get("artist")
+    album = result.get("album")
+
+    # Cover (optional)
     cover_url = None
     spotify_data = result.get("spotify")
     if spotify_data:
@@ -62,19 +82,47 @@ def _parse_response(api_response: dict):
         if images:
             cover_url = images[0].get("url")
 
-    # --- Genre (über Spotify-Künstlerdaten) ---
-    genres = []
-    if spotify_data:
-        artists = spotify_data.get("artists", [])
-        if artists:
-            genres = artists[0].get("genres", [])
-
-    genre_text = ", ".join(genres) if genres else "Unbekannt"
+    # 🎯 Genres über MusicBrainz
+    genres = _get_genres_from_musicbrainz(title, artist)
 
     return {
-        "title": result.get("title"),
-        "artist": result.get("artist"),
-        "album": result.get("album"),
-        "genre": genre_text,
+        "title": title,
+        "artist": artist,
+        "album": album,
+        "genre": genres,
         "cover": cover_url
     }
+
+
+def _get_genres_from_musicbrainz(title: str, artist: str) -> list[str]:
+    """
+    Sucht nach Recording-Tags (Genres) bei MusicBrainz
+    """
+    if not title or not artist:
+        return []
+
+    params = {
+        "query": f'recording:"{title}" AND artist:"{artist}"',
+        "fmt": "json",
+        "limit": 1
+    }
+
+    try:
+        response = requests.get(
+            MUSICBRAINZ_SEARCH_URL,
+            params=params,
+            headers=MUSICBRAINZ_HEADERS,
+            timeout=10
+        )
+        data = response.json()
+    except Exception:
+        return []
+
+    recordings = data.get("recordings", [])
+    if not recordings:
+        return []
+
+    tags = recordings[0].get("tags", [])
+    genres = [tag["name"].title() for tag in tags]
+
+    return genres
