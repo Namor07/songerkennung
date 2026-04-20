@@ -2,7 +2,9 @@ import streamlit as st
 from songfinder_api import (
     recognize_song_from_file,
     recognize_song_from_url,
-    api_key_available
+    api_key_available,
+    get_similar_songs_by_artist,
+    get_similar_songs_by_genre
 )
 
 st.set_page_config(
@@ -74,3 +76,33 @@ elif ergebnis is None and (
     or (eingabe == "Audio-URL eingeben" and "url" in locals() and url)
 ):
     st.error("❌ Kein Song erkannt.")
+
+# =========================================================
+# Empfehlungen
+# =========================================================
+if ergebnis:
+    st.divider()
+    st.subheader("🎧 Empfohlene Songs")
+
+    # --- Gleicher Künstler ---
+    st.write("**🎤 Weitere Songs vom Künstler:**")
+    artist_songs = get_similar_songs_by_artist(
+        artist=ergebnis["artist"],
+        exclude_title=ergebnis["title"]
+    )
+
+    if artist_songs:
+        for song in artist_songs:
+            st.markdown(f"- {song}")
+    else:
+        st.write("Keine weiteren Songs gefunden.")
+
+    # --- Ähnliches Genre ---
+    st.write("**🏷️ Songs mit ähnlichem Genre:**")
+    genre_songs = get_similar_songs_by_genre(ergebnis.get("genre", []))
+
+    if genre_songs:
+        for song in genre_songs:
+            st.markdown(f"- {song}")
+    else:
+        st.write("Keine genreähnlichen Songs gefunden.")
