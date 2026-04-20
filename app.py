@@ -1,108 +1,92 @@
 import streamlit as st
 from songfinder_api import (
-    recognize_song_from_file,
-    recognize_song_from_url,
-    api_key_available,
-    get_similar_songs_by_artist,
-    get_similar_songs_by_genre
+    recognize_song,
+    get_recommended_songs_by_artist_mb,
+    get_recommended_songs_by_genre_mb
 )
 
-st.set_page_config(
-    page_title="🎵 Song-Erkennung",
-    layout="centered"
+st.set_page_config(page_title="Song-Erkennung", page_icon="🎵")
+
+st.title("🎵 Song-Erkennung mit KI")
+st.write("Lade eine Audiodatei hoch oder gib eine Audio- oder YouTube-URL ein.")
+
+# ---------------------------
+# Eingabe
+# ---------------------------
+uploaded_file = st.file_uploader(
+    "Audiodatei hochladen (MP3 oder WAV)",
+    type=["mp3", "wav"]
 )
 
-st.title("🎵 Song-Erkennungs-App")
-st.write("Erkennt Songs und ermittelt Genre-Tags aus einer offenen Musikdatenbank.")
-
-# API-Key prüfen
-if not api_key_available():
-    st.error(
-        "❌ Kein API-Key gefunden.\n\n"
-        "Bitte setze die Umgebungsvariable `AUDD_API_KEY` "
-        "(z. B. über Streamlit Secrets)."
-    )
-    st.stop()
-
-st.divider()
-
-eingabe = st.radio(
-    "Eingabemethode auswählen:",
-    ("Audiodatei hochladen", "Audio-URL eingeben")
+audio_url = st.text_input(
+    "Oder Audio-/YouTube-URL eingeben"
 )
 
-ergebnis = None
+# ---------------------------
+# Song erkennen
+# ---------------------------
+if st.button("Song erkennen"):
+    with st.spinner("Song wird erkannt..."):
+        result = recognize_song(uploaded_file, audio_url)
 
-if eingabe == "Audiodatei hochladen":
-    datei = st.file_uploader(
-        "Audiodatei auswählen (MP3 oder WAV)",
-        type=["mp3", "wav"]
-    )
-
-    if datei:
-        with st.spinner("🎧 Song wird erkannt..."):
-            ergebnis = recognize_song_from_file(datei)
-
-elif eingabe == "Audio-URL eingeben":
-    url = st.text_input("Audio-URL eingeben")
-
-    if url:
-        with st.spinner("🌐 Song wird erkannt..."):
-            ergebnis = recognize_song_from_url(url)
-
-# -----------------------------
-# Ergebnisanzeige
-# -----------------------------
-if ergebnis:
-    st.success("✅ Song erkannt!")
-
-    st.subheader("🎶 Erkannte Informationen")
-    st.write(f"**Titel:** {ergebnis.get('title', 'Unbekannt')}")
-    st.write(f"**Künstler:** {ergebnis.get('artist', 'Unbekannt')}")
-    st.write(f"**Album:** {ergebnis.get('album', 'Unbekannt')}")
-
-    genres = ergebnis.get("genre", [])
-    if genres:
-        st.write("**Genres:**")
-        st.markdown(" • " + " • ".join(genres))
+    if not result:
+        st.error("Song konnte nicht erkannt werden.")
     else:
-        st.write("**Genres:** Unbekannt")
+        st.success("Song erkannt!")
 
-    if ergebnis.get("cover"):
-        st.image(ergebnis["cover"], caption="Coverbild")
+        # ---------------------------
+        # Erkannter Song
+        # ---------------------------
+        st.subheader("🎶 Erkannter Song")
+        show_song_card = lambda song: (
+            st.container(border=True)
+        )
 
-elif ergebnis is None and (
-    (eingabe == "Audiodatei hochladen" and "datei" in locals() and datei)
-    or (eingabe == "Audio-URL eingeben" and "url" in locals() and url)
-):
-    st.error("❌ Kein Song erkannt.")
+        with st.container(border=True):
+            col1, col2 = st.columns([1, 3])
 
-# =========================================================
-# Empfehlungen
-# =========================================================
-if ergebnis:
-    st.divider()
-    st.subheader("🎧 Empfohlene Songs")
+            if result.get("cover"):
+                col1.image(result["cover"], width=120)
 
-    # --- Gleicher Künstler ---
-    st.write("**🎤 Weitere Songs vom Künstler:**")
-    artist_songs = get_similar_songs_by_artist(
-        artist=ergebnis["artist"],
-        exclude_title=ergebnis["title"]
-    )
+            col2.write(f"**Titel:** {result.get('title')}")
+            col2.write(f"**Künstler:** {result.get('artist')}")
+            col2.write(f"**Album:** {result.get('album')}")
+            col2.write(
+                f"**Genre:** {', '.join(result.get('genre', [])) or 'Unbekannt'}"
+            )
 
-    if artist_songs:
-        for song in artist_songs:
-            st.markdown(f"- {song}")
-    else:
-        st.write("Keine weiteren Songs gefunden.")
+        # ---------------------------
+        # Empfehlungen
+        # ---------------------------
+        st.divider()
+        st.subheader("🎧 Song-Empfehlungen")
 
-    # --- Ähnliches Genre ---
-    st.write("**🏷️ Songs mit ähnlichem Genre:**")
-    genre_songs = get_similar_songs_by_genre(ergebnis.get("genre", []))
+        # Künstler
+        st.write("### 🎤 Weitere Songs vom Künstler")
+        artist_recs = get_recommended_songs_by_artist_mb(result["artist"])
+        if artist_recs:
+            for song in artist_recs:
+                show_song(song := song)
+        else:
+            st.write("Keine Empfehlungen gefunden.")
 
-    if genre_songs:
-        for song in genre_songs:
-            st.markdown(f"- {song}")
-    else:
-        st.write("Keine genreähnlichen Songs gefunden.")
+        # Genre
+        st.write("### 🏷️ Songs mit ähnlichem Genre")
+        genre_recs = get_recommended_songs_by_genre_mb(result.get("genre", []))
+        if genre_recs:
+            for song in genre_recs:
+                show_song(song := song)
+        else:
+            st.write("Keine Empfehlungen gefunden.")
+
+
+def show_song(song: dict):
+    with st.container(border=True):
+        col1, col2 = st.columns([1, 3])
+
+        if song.get("cover"):
+            col1.image(song["cover"], width=120)
+
+        col2.write(f"**Titel:** {song.get('title', 'Unbekannt')}")
+        col2.write(f"**Künstler:** {song.get('artist', 'Unbekannt')}")
+        col2.write(f"**Album:** {song.get('album', 'Unbekannt')}")
