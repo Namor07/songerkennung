@@ -1,24 +1,72 @@
+import os
 import requests
 
+# -----------------------------
+# AudD (Song-Erkennung)
+# -----------------------------
 AUDD_API_URL = "https://api.audd.io/"
+AUDD_API_KEY = os.getenv("AUDD_API_KEY")
 
-# ---------------------------
-# Song-Erkennung (AudD)
-# ---------------------------
-def recognize_song(uploaded_file, audio_url):
-    data = {}
+# -----------------------------
+# MusicBrainz (Genres)
+# -----------------------------
+MUSICBRAINZ_BASE_URL = "https://musicbrainz.org/ws/2"
+MUSICBRAINZ_HEADERS = {
+    "User-Agent": "SongErkennungSchulprojekt/1.0 (schule@example.de)"
+}
 
-    if uploaded_file:
-        files = {"file": uploaded_file}
-    elif audio_url:
-        data["url"] = audio_url
-        files = None
-    else:
+
+def api_key_available() -> bool:
+    return AUDD_API_KEY is not None and AUDD_API_KEY.strip() != ""
+
+
+# =========================================================
+# Öffentliche Funktionen
+# =========================================================
+def recognize_song_from_file(audio_file):
+    files = {
+        "file": (audio_file.name, audio_file, audio_file.type)
+    }
+
+    data = {
+        "api_token": AUDD_API_KEY,
+        "return": "spotify"
+    }
+
+    response = requests.post(
+        AUDD_API_URL,
+        data=data,
+        files=files,
+        timeout=30
+    )
+
+    return _parse_audd_response(response.json())
+
+
+def recognize_song_from_url(audio_url: str):
+    data = {
+        "api_token": AUDD_API_KEY,
+        "url": audio_url,
+        "return": "spotify"
+    }
+
+    response = requests.post(
+        AUDD_API_URL,
+        data=data,
+        timeout=30
+    )
+
+    return _parse_audd_response(response.json())
+
+
+# =========================================================
+# AudD → MusicBrainz Auswertung
+# =========================================================
+def _parse_audd_response(api_response: dict):
+    if api_response.get("status") != "success":
         return None
 
-    response = requests.post(AUDD_API_URL, data=data, files=files)
-    result = response.json().get("result")
-
+    result = api_response.get("result")
     if not result:
         return None
 
@@ -26,129 +74,97 @@ def recognize_song(uploaded_file, audio_url):
     artist = result.get("artist")
     album = result.get("album")
 
-    genres = get_genres_from_musicbrainz(artist)
-    cover = get_cover_from_musicbrainz(artist, album)
+    # Cover (optional)
+    cover_url = None
+    spotify_data = result.get("spotify")
+    if spotify_data:
+        images = spotify_data.get("album", {}).get("images", [])
+        if images:
+            cover_url = images[0].get("url")
+
+    # 🎯 Genre-Fallback-Logik
+    genres = _get_genres_with_fallback(title, artist, album)
 
     return {
         "title": title,
         "artist": artist,
         "album": album,
         "genre": genres,
-        "cover": cover
+        "cover": cover_url
     }
 
-# ---------------------------
-# MusicBrainz Genre
-# ---------------------------
-def get_genres_from_musicbrainz(artist):
-    url = "https://musicbrainz.org/ws/2/artist"
-    params = {
-        "query": f'artist:"{artist}"',
-        "fmt": "json",
-        "limit": 1
-    }
 
-    r = requests.get(url, params=params)
-    data = r.json()
+# =========================================================
+# MusicBrainz Genre-Logik
+# =========================================================
+def _get_genres_with_fallback(title: str, artist: str, album: str) -> list[str]:
+    """
+    1. Recording-Tags
+    2. Album-Tags (Release Group)
+    3. Artist-Tags
+    """
+    genres = _get_recording_genres(title, artist)
+    if genres:
+        return genres
 
-    artists = data.get("artists", [])
-    if not artists:
+    genres = _get_album_genres(album, artist)
+    if genres:
+        return genres
+
+    genres = _get_artist_genres(artist)
+    return genres
+
+
+def _get_recording_genres(title: str, artist: str) -> list[str]:
+    return _search_musicbrainz(
+        endpoint="recording",
+        query=f'recording:"{title}" AND artist:"{artist}"'
+    )
+
+
+def _get_album_genres(album: str, artist: str) -> list[str]:
+    return _search_musicbrainz(
+        endpoint="release-group",
+        query=f'releasegroup:"{album}" AND artist:"{artist}"'
+    )
+
+
+def _get_artist_genres(artist: str) -> list[str]:
+    return _search_musicbrainz(
+        endpoint="artist",
+        query=f'artist:"{artist}"'
+    )
+
+
+def _search_musicbrainz(endpoint: str, query: str) -> list[str]:
+    """
+    Allgemeine Suche nach Tags bei MusicBrainz
+    """
+    if not query:
         return []
 
-    tags = artists[0].get("tags", [])
-    return [t["name"] for t in tags[:3]]
-
-# ---------------------------
-# Cover Art Archive
-# ---------------------------
-def get_cover_from_musicbrainz(artist, album):
-    if not album:
-        return None
-
-    url = "https://musicbrainz.org/ws/2/release"
+    url = f"{MUSICBRAINZ_BASE_URL}/{endpoint}"
     params = {
-        "query": f'release:"{album}" AND artist:"{artist}"',
+        "query": query,
         "fmt": "json",
         "limit": 1
     }
-
-    r = requests.get(url, params=params)
-    releases = r.json().get("releases", [])
-
-    if not releases:
-        return None
-
-    release_id = releases[0]["id"]
-    cover_url = f"https://coverartarchive.org/release/{release_id}"
 
     try:
-        cover_data = requests.get(cover_url).json()
-        return cover_data["images"][0]["image"]
+        response = requests.get(
+            url,
+            params=params,
+            headers=MUSICBRAINZ_HEADERS,
+            timeout=10
+        )
+        data = response.json()
     except Exception:
-        return None
-
-# ---------------------------
-# Empfehlungen: Künstler
-# ---------------------------
-def get_recommended_songs_by_artist_mb(artist, limit=5):
-    url = "https://musicbrainz.org/ws/2/recording"
-    params = {
-        "query": f'artist:"{artist}"',
-        "fmt": "json",
-        "limit": limit
-    }
-
-    r = requests.get(url, params=params)
-    recordings = r.json().get("recordings", [])
-
-    results = []
-    for rec in recordings:
-        releases = rec.get("releases", [])
-        album = releases[0]["title"] if releases else None
-        cover = get_cover_from_musicbrainz(artist, album)
-
-        results.append({
-            "title": rec.get("title"),
-            "artist": artist,
-            "album": album,
-            "cover": cover
-        })
-
-    return results
-
-# ---------------------------
-# Empfehlungen: Genre
-# ---------------------------
-def get_recommended_songs_by_genre_mb(genres, limit=5):
-    if not genres:
         return []
 
-    genre = genres[0]
+    key = f"{endpoint}s"
+    results = data.get(key, [])
+    if not results:
+        return []
 
-    url = "https://musicbrainz.org/ws/2/recording"
-    params = {
-        "query": f'tag:"{genre}"',
-        "fmt": "json",
-        "limit": limit
-    }
-
-    r = requests.get(url, params=params)
-    recordings = r.json().get("recordings", [])
-
-    results = []
-    for rec in recordings:
-        artist_credit = rec.get("artist-credit", [])
-        artist = artist_credit[0]["name"] if artist_credit else None
-
-        releases = rec.get("releases", [])
-        album = releases[0]["title"] if releases else None
-        cover = get_cover_from_musicbrainz(artist, album)
-
-        results.append({
-            "title": rec.get("title"),
-            "artist": artist,
-            "album": album,
-            "cover": cover
-        })
-
-    return results
+    tags = results[0].get("tags", [])
+    return [tag["name"].title() for tag in tags]
