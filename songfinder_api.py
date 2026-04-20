@@ -168,3 +168,70 @@ def _search_musicbrainz(endpoint: str, query: str) -> list[str]:
 
     tags = results[0].get("tags", [])
     return [tag["name"].title() for tag in tags]
+
+# =========================================================
+# Empfehlungen (MusicBrainz)
+# =========================================================
+
+def get_similar_songs_by_artist(artist: str, exclude_title: str, limit: int = 5) -> list[str]:
+    """
+    Liefert weitere Songs desselben Künstlers
+    """
+    if not artist:
+        return []
+
+    params = {
+        "query": f'artist:"{artist}"',
+        "fmt": "json",
+        "limit": limit + 1
+    }
+
+    try:
+        response = requests.get(
+            f"{MUSICBRAINZ_BASE_URL}/recording",
+            params=params,
+            headers=MUSICBRAINZ_HEADERS,
+            timeout=10
+        )
+        data = response.json()
+    except Exception:
+        return []
+
+    recordings = data.get("recordings", [])
+    songs = []
+
+    for rec in recordings:
+        title = rec.get("title")
+        if title and title.lower() != exclude_title.lower():
+            songs.append(title)
+
+    return songs[:limit]
+
+
+def get_similar_songs_by_genre(genres: list[str], limit: int = 5) -> list[str]:
+    """
+    Liefert Songs mit ähnlichen Genres (Tags)
+    """
+    if not genres:
+        return []
+
+    genre_query = genres[0]  # wir nehmen das wichtigste Genre
+    params = {
+        "query": f'tag:"{genre_query}"',
+        "fmt": "json",
+        "limit": limit
+    }
+
+    try:
+        response = requests.get(
+            f"{MUSICBRAINZ_BASE_URL}/recording",
+            params=params,
+            headers=MUSICBRAINZ_HEADERS,
+            timeout=10
+        )
+        data = response.json()
+    except Exception:
+        return []
+
+    recordings = data.get("recordings", [])
+    return [rec.get("title") for rec in recordings if rec.get("title")]
