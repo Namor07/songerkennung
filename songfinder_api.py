@@ -1,10 +1,15 @@
-import os
+import streamlit as st
 import requests
 
 AUDD_API_URL = "https://api.audd.io/"
-LASTFM_API_KEY = os.getenv("LASTFM_API_KEY")
-LASTFM_BASE_URL = "http://ws.audioscrobbler.com/2.0/"
+LASTFM_API_KEY = st.secrets.get("LASTFM_API_KEY")
 
+if not LASTFM_API_KEY:
+    raise RuntimeError(
+        "Last.fm API-Key fehlt! Bitte in .streamlit/secrets.toml setzen."
+    )
+
+LASTFM_BASE_URL = "https://ws.audioscrobbler.com/2.0/"
 # --------------------------------------------------
 # Song-Erkennung (AudD)
 # --------------------------------------------------
@@ -45,28 +50,23 @@ def recognize_song(uploaded_file, audio_url):
 
 # --------------------------------------------------
 # Last.fm: Request-Helfer
-# --------------------------------------------------
-def _lastfm_request(params: dict) -> dict:
+def lastfm_request(params: dict) -> dict:
     params["api_key"] = LASTFM_API_KEY
     params["format"] = "json"
 
-    try:
-        r = requests.get(LASTFM_BASE_URL, params=params, timeout=10)
-        return r.json()
-    except Exception:
-        return {}
-
+    r = requests.get(LASTFM_BASE_URL, params=params, timeout=10)
+    return r.json()#
+    
 # --------------------------------------------------
 # Genre-Erkennung (Last.fm Tags)
 # --------------------------------------------------
 def get_genres_from_lastfm(title: str, artist: str) -> list[str]:
-    if not LASTFM_API_KEY or not title or not artist:
-        return []
-
-    data = _lastfm_request({
+    # 1️⃣ Track-Tags
+    data = lastfm_request({
         "method": "track.getInfo",
         "track": title,
-        "artist": artist
+        "artist": artist,
+        "autocorrect": 1
     })
 
     tags = (
@@ -75,26 +75,47 @@ def get_genres_from_lastfm(title: str, artist: str) -> list[str]:
             .get("tag", [])
     )
 
-    # Mehrere Genres sind normal!
-    return [t["name"] for t in tags[:5] if "name" in t]
+    if tags:
+        return [t["name"] for t in tags[:5]]
+
+    # 2️⃣ Artist-Tags (Fallback)
+    data = lastfm_request({
+        "method": "artist.getTopTags",
+        "artist": artist,
+        "autocorrect": 1
+    })
+
+    tags = data.get("toptags", {}).get("tag", [])
+    return [t["name"] for t in tags[:5]]
 
 # --------------------------------------------------
 # Cover (Last.fm)
 # --------------------------------------------------
 def get_cover_from_lastfm(title: str, artist: str) -> str | None:
-    if not LASTFM_API_KEY:
-        return None
-
-    data = _lastfm_request({
+    data = lastfm_request({
         "method": "track.getInfo",
         "track": title,
-        "artist": artist
+        "artist": artist,
+        "autocorrect": 1
     })
 
     album = data.get("track", {}).get("album", {})
     images = album.get("image", [])
 
     if images:
-        return images[-1].get("#text")  # größtes Bild
+        url = images[-1].get("#text")
+        if url:
+            return url
+
+    # Fallback: Artist Image
+    data = lastfm_request({
+        "method": "artist.getInfo",
+        "artist": artist,
+        "autocorrect": 1
+    })
+
+    images = data.get("artist", {}).get("image", [])
+    if images:
+        return images[-1].get("#text")
 
     return None
