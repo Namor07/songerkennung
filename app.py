@@ -1,5 +1,9 @@
 import streamlit as st
-from songfinder_api import recognize_song
+from songfinder_api import (
+    recognize_song,
+    get_recommendations_by_artist,
+    get_recommendations_by_genre
+)
 
 st.set_page_config(page_title="Song-Erkennung", page_icon="🎵")
 
@@ -47,3 +51,28 @@ if st.button("Song erkennen"):
             st.success("Song erkannt!")
             st.subheader("🎶 Erkannter Song")
             show_song_card(result)
+
+#Song-Empfehlungen
+
+st.divider()
+st.subheader("🎧 Song-Empfehlungen")
+
+# 🎤 Gleicher Künstler
+st.write("### 🎤 Weitere bekannte Songs vom Künstler")
+artist_recs = get_recommendations_by_artist(result["artist"])
+
+if artist_recs:
+    for song in artist_recs:
+        show_song_card(song)
+else:
+    st.write("Keine Empfehlungen gefunden.")
+
+# 🏷️ Gleiches Genre
+st.write("### 🏷️ Beliebte Songs aus ähnlichem Genre")
+genre_recs = get_recommendations_by_genre(result.get("genre", []))
+
+if genre_recs:
+    for song in genre_recs:
+        show_song_card(song)
+else:
+    st.write("Keine Empfehlungen gefunden.")
