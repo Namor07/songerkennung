@@ -3,16 +3,14 @@ from songfinder_api import recognize_song
 
 st.set_page_config(page_title="Song-Erkennung", page_icon="🎵")
 st.title("🎵 Song-Erkennung")
-st.write("Lade eine Audiodatei hoch oder gib eine Audio- oder YouTube-URL ein.")
+st.write("Lade eine Audiodatei hoch.")
 
 uploaded_file = st.file_uploader(
     "Audiodatei hochladen (MP3 oder WAV)",
     type=["mp3", "wav"]
 )
 
-audio_url = st.text_input(
-    "Oder Audio- / YouTube-URL eingeben"
-)
+
 
 def show_song_card(song: dict):
     with st.container(border=True):
