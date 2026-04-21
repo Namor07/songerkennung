@@ -5,6 +5,9 @@ from songfinder_api import (
     get_recommendations_by_genre
 )
 
+if "result" not in st.session_state:
+    st.session_state.result = None
+    
 st.set_page_config(page_title="Song-Erkennung", page_icon="🎵")
 
 st.title("🎵 Song-Erkennung")
@@ -43,14 +46,40 @@ if st.button("Song erkennen"):
         st.warning("Bitte zuerst eine Audiodatei hochladen.")
     else:
         with st.spinner("Song wird erkannt …"):
-            result = recognize_song(uploaded_file)
+            st.session_state.result = recognize_song(uploaded_file)
 
-        if not result:
+        if not st.session_state.result:
             st.error("Song konnte nicht erkannt werden.")
-        else:
-            st.success("Song erkannt!")
-            st.subheader("🎶 Erkannter Song")
-            show_song_card(result)
+
+result = st.session_state.result
+
+if result:
+    st.success("Song erkannt!")
+    st.subheader("🎶 Erkannter Song")
+    show_song_card(result)
+
+    st.divider()
+    st.subheader("🎧 Song-Empfehlungen")
+
+    # 🎤 Gleicher Künstler
+    st.write("### 🎤 Weitere bekannte Songs vom Künstler")
+    artist_recs = get_recommendations_by_artist(result["artist"])
+
+    if artist_recs:
+        for song in artist_recs:
+            show_song_card(song)
+    else:
+        st.write("Keine Empfehlungen gefunden.")
+
+    # 🏷️ Gleiches Genre
+    st.write("### 🏷️ Beliebte Songs aus ähnlichem Genre")
+    genre_recs = get_recommendations_by_genre(result.get("genre", []))
+
+    if genre_recs:
+        for song in genre_recs:
+            show_song_card(song)
+    else:
+        st.write("Keine Empfehlungen gefunden.")
 
 #Song-Empfehlungen
 
