@@ -115,3 +115,74 @@ def get_cover_from_lastfm(title: str, artist: str) -> str | None:
         return images[-1].get("#text")
 
     return None
+    
+#Song-Empfehlung
+
+def get_song_details_from_lastfm(title: str, artist: str) -> dict | None:
+    data = lastfm_request({
+        "method": "track.getInfo",
+        "track": title,
+        "artist": artist,
+        "autocorrect": 1
+    })
+
+    track = data.get("track")
+    if not track:
+        return None
+
+    album = track.get("album", {})
+    images = album.get("image", [])
+
+    cover = images[-1].get("#text") if images else None
+
+    return {
+        "title": track.get("name"),
+        "artist": track.get("artist", {}).get("name"),
+        "album": album.get("title"),
+        "cover": cover
+    }
+
+def get_recommendations_by_artist(artist: str, limit: int = 5) -> list[dict]:
+    data = lastfm_request({
+        "method": "artist.getTopTracks",
+        "artist": artist,
+        "limit": limit,
+        "autocorrect": 1
+    })
+
+    tracks = data.get("toptracks", {}).get("track", [])
+    recommendations = []
+
+    for t in tracks:
+        details = get_song_details_from_lastfm(
+            title=t.get("name"),
+            artist=artist
+        )
+        if details:
+            recommendations.append(details)
+
+    return recommendations
+
+def get_recommendations_by_genre(genres: list[str], limit: int = 5) -> list[dict]:
+    if not genres:
+        return []
+
+    tag = genres[0]  # wichtigstes Genre
+    data = lastfm_request({
+        "method": "tag.getTopTracks",
+        "tag": tag,
+        "limit": limit
+    })
+
+    tracks = data.get("tracks", {}).get("track", [])
+    recommendations = []
+
+    for t in tracks:
+        artist = t.get("artist", {}).get("name")
+        title = t.get("name")
+
+        details = get_song_details_from_lastfm(title, artist)
+        if details:
+            recommendations.append(details)
+
+    return recommendations
