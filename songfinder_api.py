@@ -10,22 +10,20 @@ if not LASTFM_API_KEY:
     )
 
 LASTFM_BASE_URL = "https://ws.audioscrobbler.com/2.0/"
-# --------------------------------------------------
-# Song-Erkennung (AudD)
-# --------------------------------------------------
-def recognize_song(uploaded_file, audio_url):
-    data = {}
-    files = None
 
-    if uploaded_file:
-        files = {"file": uploaded_file}
-    elif audio_url:
-        data["url"] = audio_url
-    else:
+# --------------------------------------------------
+# Song-Erkennung (nur Audio-Datei)
+# --------------------------------------------------
+def recognize_song(uploaded_file):
+    if not uploaded_file:
         return None
 
     try:
-        r = requests.post(AUDD_API_URL, data=data, files=files, timeout=20)
+        r = requests.post(
+            AUDD_API_URL,
+            files={"file": uploaded_file},
+            timeout=20
+        )
         result = r.json().get("result")
     except Exception:
         return None
@@ -49,19 +47,19 @@ def recognize_song(uploaded_file, audio_url):
     }
 
 # --------------------------------------------------
-# Last.fm: Request-Helfer
+# Last.fm Helper
+# --------------------------------------------------
 def lastfm_request(params: dict) -> dict:
     params["api_key"] = LASTFM_API_KEY
     params["format"] = "json"
 
     r = requests.get(LASTFM_BASE_URL, params=params, timeout=10)
-    return r.json()#
-    
+    return r.json()
+
 # --------------------------------------------------
-# Genre-Erkennung (Last.fm Tags)
+# Genre (Track → Artist Fallback)
 # --------------------------------------------------
 def get_genres_from_lastfm(title: str, artist: str) -> list[str]:
-    # 1️⃣ Track-Tags
     data = lastfm_request({
         "method": "track.getInfo",
         "track": title,
@@ -78,7 +76,6 @@ def get_genres_from_lastfm(title: str, artist: str) -> list[str]:
     if tags:
         return [t["name"] for t in tags[:5]]
 
-    # 2️⃣ Artist-Tags (Fallback)
     data = lastfm_request({
         "method": "artist.getTopTags",
         "artist": artist,
@@ -89,7 +86,7 @@ def get_genres_from_lastfm(title: str, artist: str) -> list[str]:
     return [t["name"] for t in tags[:5]]
 
 # --------------------------------------------------
-# Cover (Last.fm)
+# Cover (Album → Artist Fallback)
 # --------------------------------------------------
 def get_cover_from_lastfm(title: str, artist: str) -> str | None:
     data = lastfm_request({
@@ -107,7 +104,6 @@ def get_cover_from_lastfm(title: str, artist: str) -> str | None:
         if url:
             return url
 
-    # Fallback: Artist Image
     data = lastfm_request({
         "method": "artist.getInfo",
         "artist": artist,
