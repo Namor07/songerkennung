@@ -37,6 +37,8 @@ def show_song_card(song: dict):
         col2.write(f"**Künstler:** {song.get('artist', 'Unbekannt')}")
         col2.write(f"**Album:** {song.get('album', 'Unbekannt')}")
 
+        if song.get("genre"):
+            col2.write(f"**Genre:** {', '.join(song['genre'])}")
 # ---------------------------------
 # Song erkennen
 # ---------------------------------
