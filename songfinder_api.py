@@ -1,23 +1,24 @@
-import streamlit as st
 import requests
+import streamlit as st
 
 AUDD_API_URL = "https://api.audd.io/"
 LASTFM_API_KEY = st.secrets.get("LASTFM_API_KEY")
 
-if not LASTFM_API_KEY:
-    raise RuntimeError(
-        "Last.fm API-Key fehlt! Bitte in .streamlit/secrets.toml setzen."
-    )
-
 LASTFM_BASE_URL = "https://ws.audioscrobbler.com/2.0/"
 
 # --------------------------------------------------
-# Song-Erkennung (nur Audio-Datei)
+# Last.fm Helper
+# --------------------------------------------------
+def lastfm_request(params: dict) -> dict:
+    params["api_key"] = LASTFM_API_KEY
+    params["format"] = "json"
+    r = requests.get(LASTFM_BASE_URL, params=params, timeout=10)
+    return r.json()
+
+# --------------------------------------------------
+# Song erkennen
 # --------------------------------------------------
 def recognize_song(uploaded_file):
-    if not uploaded_file:
-        return None
-
     try:
         r = requests.post(
             AUDD_API_URL,
@@ -47,17 +48,7 @@ def recognize_song(uploaded_file):
     }
 
 # --------------------------------------------------
-# Last.fm Helper
-# --------------------------------------------------
-def lastfm_request(params: dict) -> dict:
-    params["api_key"] = LASTFM_API_KEY
-    params["format"] = "json"
-
-    r = requests.get(LASTFM_BASE_URL, params=params, timeout=10)
-    return r.json()
-
-# --------------------------------------------------
-# Genre (Track → Artist Fallback)
+# Genre
 # --------------------------------------------------
 def get_genres_from_lastfm(title: str, artist: str) -> list[str]:
     data = lastfm_request({
@@ -86,7 +77,7 @@ def get_genres_from_lastfm(title: str, artist: str) -> list[str]:
     return [t["name"] for t in tags[:5]]
 
 # --------------------------------------------------
-# Cover (Album → Artist Fallback)
+# Cover
 # --------------------------------------------------
 def get_cover_from_lastfm(title: str, artist: str) -> str | None:
     data = lastfm_request({
@@ -115,9 +106,10 @@ def get_cover_from_lastfm(title: str, artist: str) -> str | None:
         return images[-1].get("#text")
 
     return None
-    
-#Song-Empfehlung
 
+# --------------------------------------------------
+# Empfehlungen
+# --------------------------------------------------
 def get_song_details_from_lastfm(title: str, artist: str) -> dict | None:
     data = lastfm_request({
         "method": "track.getInfo",
@@ -132,7 +124,6 @@ def get_song_details_from_lastfm(title: str, artist: str) -> dict | None:
 
     album = track.get("album", {})
     images = album.get("image", [])
-
     cover = images[-1].get("#text") if images else None
 
     return {
@@ -142,7 +133,7 @@ def get_song_details_from_lastfm(title: str, artist: str) -> dict | None:
         "cover": cover
     }
 
-def get_recommendations_by_artist(artist: str, limit: int = 5) -> list[dict]:
+def get_recommendations_by_artist(artist: str, limit: int = 6) -> list[dict]:
     data = lastfm_request({
         "method": "artist.getTopTracks",
         "artist": artist,
@@ -151,23 +142,20 @@ def get_recommendations_by_artist(artist: str, limit: int = 5) -> list[dict]:
     })
 
     tracks = data.get("toptracks", {}).get("track", [])
-    recommendations = []
+    recs = []
 
     for t in tracks:
-        details = get_song_details_from_lastfm(
-            title=t.get("name"),
-            artist=artist
-        )
+        details = get_song_details_from_lastfm(t.get("name"), artist)
         if details:
-            recommendations.append(details)
+            recs.append(details)
 
-    return recommendations
+    return recs
 
-def get_recommendations_by_genre(genres: list[str], limit: int = 5) -> list[dict]:
+def get_recommendations_by_genre(genres: list[str], limit: int = 6) -> list[dict]:
     if not genres:
         return []
 
-    tag = genres[0]  # wichtigstes Genre
+    tag = genres[0]
     data = lastfm_request({
         "method": "tag.getTopTracks",
         "tag": tag,
@@ -175,14 +163,13 @@ def get_recommendations_by_genre(genres: list[str], limit: int = 5) -> list[dict
     })
 
     tracks = data.get("tracks", {}).get("track", [])
-    recommendations = []
+    recs = []
 
     for t in tracks:
         artist = t.get("artist", {}).get("name")
         title = t.get("name")
-
         details = get_song_details_from_lastfm(title, artist)
         if details:
-            recommendations.append(details)
+            recs.append(details)
 
-    return recommendations
+    return recs
