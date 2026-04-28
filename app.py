@@ -13,21 +13,22 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# Wrapped-Style CSS
+# Wrapped CSS (zentriert & begrenzt)
 # --------------------------------------------------
 st.markdown("""
 <style>
 .wrapped-section {
+    max-width: 760px;
+    margin: 0 auto 60px auto;
     padding: 70px 40px;
     border-radius: 28px;
-    margin-bottom: 50px;
     color: white;
 }
 
 .wrapped-title {
-    font-size: 46px;
+    font-size: 44px;
     font-weight: 800;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 .wrapped-subtitle {
@@ -35,22 +36,21 @@ st.markdown("""
     opacity: 0.95;
 }
 
-.wrapped-cover {
-    max-width: 280px;
-    border-radius: 18px;
-    margin-top: 25px;
-}
-
 .song-meta {
     font-size: 20px;
     margin-top: 10px;
 }
 
+.wrapped-cover {
+    max-width: 260px;
+    border-radius: 18px;
+    margin-top: 25px;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # --------------------------------------------------
-# Farbverläufe (Spotify-Wrapped-Feeling)
+# Farbverläufe (Spotify Wrapped Feeling)
 # --------------------------------------------------
 GRADIENTS = [
     "linear-gradient(135deg, #7f00ff, #e100ff)",
@@ -70,7 +70,7 @@ if "result" not in st.session_state:
     st.session_state.result = None
 
 # --------------------------------------------------
-# Header
+# UI
 # --------------------------------------------------
 st.title("🎧 Dein Song Wrapped")
 st.write("Lade eine Audiodatei hoch und erhalte dein persönliches Musik-Wrapped.")
@@ -124,15 +124,15 @@ if result:
     artist_recs = get_recommendations_by_artist(result["artist"])
 
     if artist_recs:
-        st.subheader("🔥 Mehr Songs von diesem Künstler")
-
         for song in artist_recs:
             st.markdown(f"""
             <div class="wrapped-section" style="background:{random_bg()}">
                 <div class="wrapped-title">{song["title"]}</div>
                 <div class="wrapped-subtitle">{song["artist"]}</div>
 
-                <div class="song-meta">🎵 Album: {song.get("album", "Unbekannt")}</div>
+                <div class="song-meta">
+                    🎵 Album: {song.get("album", "Unbekannt")}
+                </div>
 
                 {"<img src='" + song["cover"] + "' class='wrapped-cover'>" if song.get("cover") else ""}
             </div>
@@ -144,15 +144,15 @@ if result:
     genre_recs = get_recommendations_by_genre(result.get("genre", []))
 
     if genre_recs:
-        st.subheader("🎧 Dein Genre-Vibe")
-
         for song in genre_recs:
             st.markdown(f"""
             <div class="wrapped-section" style="background:{random_bg()}">
                 <div class="wrapped-title">{song["title"]}</div>
                 <div class="wrapped-subtitle">{song["artist"]}</div>
 
-                <div class="song-meta">🎵 Album: {song.get("album", "Unbekannt")}</div>
+                <div class="song-meta">
+                    🎵 Album: {song.get("album", "Unbekannt")}
+                </div>
 
                 {"<img src='" + song["cover"] + "' class='wrapped-cover'>" if song.get("cover") else ""}
             </div>
