@@ -12,10 +12,11 @@ st.set_page_config(
     layout="wide"
 )
 
-# --------------------------------------------------
-# Wrapped CSS (zentriert & begrenzt)
-# --------------------------------------------------
-st.markdown("""
+# ==================================================
+# CSS – Spotify Wrapped Style (zentriert & begrenzt)
+# ==================================================
+st.markdown(
+"""
 <style>
 .wrapped-section {
     max-width: 760px;
@@ -23,6 +24,13 @@ st.markdown("""
     padding: 70px 40px;
     border-radius: 28px;
     color: white;
+}
+
+.section-heading {
+    max-width: 760px;
+    margin: 80px auto 20px auto;
+    font-size: 32px;
+    font-weight: 800;
 }
 
 .wrapped-title {
@@ -47,11 +55,13 @@ st.markdown("""
     margin-top: 25px;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+unsafe_allow_html=True
+)
 
-# --------------------------------------------------
-# Farbverläufe (Spotify Wrapped Feeling)
-# --------------------------------------------------
+# ==================================================
+# Farben (Wrapped-Feeling)
+# ==================================================
 GRADIENTS = [
     "linear-gradient(135deg, #7f00ff, #e100ff)",
     "linear-gradient(135deg, #1db954, #1ed760)",
@@ -63,15 +73,15 @@ GRADIENTS = [
 def random_bg():
     return random.choice(GRADIENTS)
 
-# --------------------------------------------------
+# ==================================================
 # Session State
-# --------------------------------------------------
+# ==================================================
 if "result" not in st.session_state:
     st.session_state.result = None
 
-# --------------------------------------------------
+# ==================================================
 # UI
-# --------------------------------------------------
+# ==================================================
 st.title("🎧 Dein Song Wrapped")
 st.write("Lade eine Audiodatei hoch und erhalte dein persönliches Musik-Wrapped.")
 
@@ -80,9 +90,9 @@ uploaded_file = st.file_uploader(
     type=["mp3", "wav"]
 )
 
-# --------------------------------------------------
+# ==================================================
 # Song erkennen
-# --------------------------------------------------
+# ==================================================
 if st.button("Wrapped erstellen"):
     if not uploaded_file:
         st.warning("Bitte zuerst eine Audiodatei hochladen.")
@@ -93,67 +103,71 @@ if st.button("Wrapped erstellen"):
         if not st.session_state.result:
             st.error("Song konnte nicht erkannt werden.")
 
-# --------------------------------------------------
+# ==================================================
 # Wrapped anzeigen
-# --------------------------------------------------
+# ==================================================
 result = st.session_state.result
 
 if result:
-    # ==================================================
+
+    # ----------------------------------------------
     # STORY 1 – ERKANNTER SONG
-    # ==================================================
-    st.markdown(f"""
-    <div class="wrapped-section" style="background:{random_bg()}">
-        <div class="wrapped-title">Du hast gehört</div>
-        <div class="wrapped-subtitle">
-            {result["title"]} – {result["artist"]}
-        </div>
+    # ----------------------------------------------
+    st.markdown(
+f"""
+<div class="wrapped-section" style="background:{random_bg()}">
+    <div class="wrapped-title">Du hast gehört</div>
+    <div class="wrapped-subtitle">{result["title"]} – {result["artist"]}</div>
+    <div class="song-meta">🎵 Album: {result.get("album", "Unbekannt")}</div>
+    <div class="song-meta">🎧 Genre: {", ".join(result.get("genre", [])) or "Unbekannt"}</div>
+    {f"<img src='{result['cover']}' class='wrapped-cover'>" if result.get("cover") else ""}
+</div>
+""",
+unsafe_allow_html=True
+    )
 
-        <div class="song-meta">🎵 Album: {result.get("album", "Unbekannt")}</div>
-        <div class="song-meta">
-            🎧 Genre: {", ".join(result.get("genre", [])) or "Unbekannt"}
-        </div>
+    # ----------------------------------------------
+    # ÜBERSCHRIFT: Künstler
+    # ----------------------------------------------
+    st.markdown(
+        "<div class='section-heading'>🔥 Weitere Songs vom Künstler</div>",
+        unsafe_allow_html=True
+    )
 
-        {"<img src='" + result["cover"] + "' class='wrapped-cover'>" if result.get("cover") else ""}
-    </div>
-    """, unsafe_allow_html=True)
-
-    # ==================================================
-    # STORY 2 – SONGS VOM KÜNSTLER
-    # ==================================================
     artist_recs = get_recommendations_by_artist(result["artist"])
 
-    if artist_recs:
-        for song in artist_recs:
-            st.markdown(f"""
-            <div class="wrapped-section" style="background:{random_bg()}">
-                <div class="wrapped-title">{song["title"]}</div>
-                <div class="wrapped-subtitle">{song["artist"]}</div>
+    for song in artist_recs:
+        st.markdown(
+f"""
+<div class="wrapped-section" style="background:{random_bg()}">
+    <div class="wrapped-title">{song["title"]}</div>
+    <div class="wrapped-subtitle">{song["artist"]}</div>
+    <div class="song-meta">🎵 Album: {song.get("album", "Unbekannt")}</div>
+    {f"<img src='{song['cover']}' class='wrapped-cover'>" if song.get("cover") else ""}
+</div>
+""",
+unsafe_allow_html=True
+        )
 
-                <div class="song-meta">
-                    🎵 Album: {song.get("album", "Unbekannt")}
-                </div>
+    # ----------------------------------------------
+    # ÜBERSCHRIFT: Genre
+    # ----------------------------------------------
+    st.markdown(
+        "<div class='section-heading'>🎧 Empfehlungen aus dem gleichen Genre</div>",
+        unsafe_allow_html=True
+    )
 
-                {"<img src='" + song["cover"] + "' class='wrapped-cover'>" if song.get("cover") else ""}
-            </div>
-            """, unsafe_allow_html=True)
-
-    # ==================================================
-    # STORY 3 – SONGS AUS GLEICHEM GENRE
-    # ==================================================
     genre_recs = get_recommendations_by_genre(result.get("genre", []))
 
-    if genre_recs:
-        for song in genre_recs:
-            st.markdown(f"""
-            <div class="wrapped-section" style="background:{random_bg()}">
-                <div class="wrapped-title">{song["title"]}</div>
-                <div class="wrapped-subtitle">{song["artist"]}</div>
-
-                <div class="song-meta">
-                    🎵 Album: {song.get("album", "Unbekannt")}
-                </div>
-
-                {"<img src='" + song["cover"] + "' class='wrapped-cover'>" if song.get("cover") else ""}
-            </div>
-            """, unsafe_allow_html=True)
+    for song in genre_recs:
+        st.markdown(
+f"""
+<div class="wrapped-section" style="background:{random_bg()}">
+    <div class="wrapped-title">{song["title"]}</div>
+    <div class="wrapped-subtitle">{song["artist"]}</div>
+    <div class="song-meta">🎵 Album: {song.get("album", "Unbekannt")}</div>
+    {f"<img src='{song['cover']}' class='wrapped-cover'>" if song.get("cover") else ""}
+</div>
+""",
+unsafe_allow_html=True
+        )
