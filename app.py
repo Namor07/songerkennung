@@ -82,8 +82,8 @@ if "result" not in st.session_state:
 # ==================================================
 # UI
 # ==================================================
-st.title("🎧 Dein Song Wrapped")
-st.write("Lade eine Audiodatei hoch,lasse diese erkennen und erhalte dein persönliches Musik-Wrapped.")
+st.title("🎧 Song-Erkennung")
+st.write("Lade eine Audiodatei hoch, lasse diese erkennen und erhalte dein persönliches Musik-Wrapped.")
 
 uploaded_file = st.file_uploader(
     "Audiodatei hochladen (MP3 oder WAV)",
