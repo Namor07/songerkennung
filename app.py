@@ -7,7 +7,7 @@ from songfinder_api import (
 )
 
 st.set_page_config(
-    page_title="Song Wrapped",
+    page_title="Song-Erkennung",
     page_icon="🎧",
     layout="wide"
 )
@@ -83,7 +83,7 @@ if "result" not in st.session_state:
 # UI
 # ==================================================
 st.title("🎧 Dein Song Wrapped")
-st.write("Lade eine Audiodatei hoch und erhalte dein persönliches Musik-Wrapped.")
+st.write("Lade eine Audiodatei hoch,lasse diese erkennen und erhalte dein persönliches Musik-Wrapped.")
 
 uploaded_file = st.file_uploader(
     "Audiodatei hochladen (MP3 oder WAV)",
@@ -93,7 +93,7 @@ uploaded_file = st.file_uploader(
 # ==================================================
 # Song erkennen
 # ==================================================
-if st.button("Wrapped erstellen"):
+if st.button("Song erkennen"):
     if not uploaded_file:
         st.warning("Bitte zuerst eine Audiodatei hochladen.")
     else:
