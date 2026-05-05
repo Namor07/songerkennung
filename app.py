@@ -130,7 +130,7 @@ unsafe_allow_html=True
     # ÜBERSCHRIFT: Künstler
     # ----------------------------------------------
     st.markdown(
-        "<div class='section-heading'>🔥 Weitere Songs vom Künstler</div>",
+        "<div class='section-heading'>🎸 Weitere Songs vom Künstler</div>",
         unsafe_allow_html=True
     )
 
