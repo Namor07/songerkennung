@@ -189,15 +189,12 @@ unsafe_allow_html=True
         "<div class='section-heading'>🎸 Weitere Songs vom Künstler</div>",
         unsafe_allow_html=True
     )
-
-    artist_recs = get_recommendations_by_artist(result["artist"])
-    
+    TARGET_COUNT = 6
+    artist_recs = get_recommendations_by_artist(result["artist"])    
     seen_songs = set()
 
-    # Erkannten Song direkt blockieren
-    recognized_key = f"{result['artist']} - {result['title']}"
-    seen_songs.add(recognized_key)
-    
+    filtered_artist_songs = []
+
     for song in artist_recs:
         key = f"{song['artist']} - {song['title']}"
     
@@ -205,7 +202,12 @@ unsafe_allow_html=True
             continue
     
         seen_songs.add(key)
-        
+        filtered_artist_songs.append(song)
+    
+        if len(filtered_artist_songs) == TARGET_COUNT:
+            break
+            
+        for song in filtered_artist_songs:
         st.markdown(
 f"""
 <div class="wrapped-section" style="background:{random_bg()}">
@@ -226,7 +228,10 @@ unsafe_allow_html=True
         unsafe_allow_html=True
     )
 
+    TARGET_COUNT = 6
     genre_recs = get_recommendations_by_genre(result.get("genre", []))
+
+    filtered_genre_songs = []
 
     for song in genre_recs:
         key = f"{song['artist']} - {song['title']}"
@@ -235,6 +240,10 @@ unsafe_allow_html=True
             continue
     
         seen_songs.add(key)
+        filtered_genre_songs.append(song)
+    
+        if len(filtered_genre_songs) == TARGET_COUNT:
+            break
         
         st.markdown(
 f"""
