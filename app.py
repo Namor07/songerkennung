@@ -110,7 +110,7 @@ st.markdown("""
 <div class="center-box">
     <h1>🎧 Song-Erkennung</h1>
     <p>
-        Lade eine Audiodatei hoch, lasse diese erkennen und erhalte
+        Lade einen Song hoch, lasse diesen erkennen und erhalte
         dein persönliches Musik-Wrapped. 🔥
     </p>
 </div>
