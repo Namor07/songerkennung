@@ -191,8 +191,17 @@ unsafe_allow_html=True
     )
 
     artist_recs = get_recommendations_by_artist(result["artist"])
-
+    
+    seen_songs = set()
+    
     for song in artist_recs:
+        key = f"{song['artist']} - {song['title']}"
+    
+        if key in seen_songs:
+            continue
+    
+        seen_songs.add(key)
+        
         st.markdown(
 f"""
 <div class="wrapped-section" style="background:{random_bg()}">
@@ -216,6 +225,13 @@ unsafe_allow_html=True
     genre_recs = get_recommendations_by_genre(result.get("genre", []))
 
     for song in genre_recs:
+        key = f"{song['artist']} - {song['title']}"
+    
+        if key in seen_songs:
+            continue
+    
+        seen_songs.add(key)
+        
         st.markdown(
 f"""
 <div class="wrapped-section" style="background:{random_bg()}">
