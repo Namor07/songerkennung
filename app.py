@@ -189,12 +189,15 @@ unsafe_allow_html=True
         "<div class='section-heading'>🎸 Weitere Songs vom Künstler</div>",
         unsafe_allow_html=True
     )
-    TARGET_COUNT = 6
-    artist_recs = get_recommendations_by_artist(result["artist"])    
+
+    artist_recs = get_recommendations_by_artist(result["artist"])
+    
     seen_songs = set()
 
-    filtered_artist_songs = []
-
+    # Erkannten Song direkt blockieren
+    recognized_key = f"{result['artist']} - {result['title']}"
+    seen_songs.add(recognized_key)
+    
     for song in artist_recs:
         key = f"{song['artist']} - {song['title']}"
     
@@ -202,23 +205,18 @@ unsafe_allow_html=True
             continue
     
         seen_songs.add(key)
-        filtered_artist_songs.append(song)
-    
-        if len(filtered_artist_songs) == TARGET_COUNT:
-            break
-            
-        for song in filtered_artist_songs:
-            st.markdown(
-    f"""
-    <div class="wrapped-section" style="background:{random_bg()}">
-        <div class="wrapped-title">{song["title"]}</div>
-        <div class="wrapped-subtitle">{song["artist"]}</div>
-        <div class="song-meta">🎵 Album: {song.get("album", "Unbekannt")}</div>
-        {f"<img src='{song['cover']}' class='wrapped-cover'>" if song.get("cover") else ""}
-    </div>
-    """,
-    unsafe_allow_html=True
-            )
+        
+        st.markdown(
+f"""
+<div class="wrapped-section" style="background:{random_bg()}">
+    <div class="wrapped-title">{song["title"]}</div>
+    <div class="wrapped-subtitle">{song["artist"]}</div>
+    <div class="song-meta">🎵 Album: {song.get("album", "Unbekannt")}</div>
+    {f"<img src='{song['cover']}' class='wrapped-cover'>" if song.get("cover") else ""}
+</div>
+""",
+unsafe_allow_html=True
+        )
 
     # ----------------------------------------------
     # ÜBERSCHRIFT: Genre
@@ -228,10 +226,7 @@ unsafe_allow_html=True
         unsafe_allow_html=True
     )
 
-    TARGET_COUNT = 6
     genre_recs = get_recommendations_by_genre(result.get("genre", []))
-
-    filtered_genre_songs = []
 
     for song in genre_recs:
         key = f"{song['artist']} - {song['title']}"
@@ -240,10 +235,6 @@ unsafe_allow_html=True
             continue
     
         seen_songs.add(key)
-        filtered_genre_songs.append(song)
-    
-        if len(filtered_genre_songs) == TARGET_COUNT:
-            break
         
         st.markdown(
 f"""
