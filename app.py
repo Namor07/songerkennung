@@ -208,17 +208,17 @@ unsafe_allow_html=True
             break
             
         for song in filtered_artist_songs:
-        st.markdown(
-f"""
-<div class="wrapped-section" style="background:{random_bg()}">
-    <div class="wrapped-title">{song["title"]}</div>
-    <div class="wrapped-subtitle">{song["artist"]}</div>
-    <div class="song-meta">🎵 Album: {song.get("album", "Unbekannt")}</div>
-    {f"<img src='{song['cover']}' class='wrapped-cover'>" if song.get("cover") else ""}
-</div>
-""",
-unsafe_allow_html=True
-        )
+            st.markdown(
+    f"""
+    <div class="wrapped-section" style="background:{random_bg()}">
+        <div class="wrapped-title">{song["title"]}</div>
+        <div class="wrapped-subtitle">{song["artist"]}</div>
+        <div class="song-meta">🎵 Album: {song.get("album", "Unbekannt")}</div>
+        {f"<img src='{song['cover']}' class='wrapped-cover'>" if song.get("cover") else ""}
+    </div>
+    """,
+    unsafe_allow_html=True
+            )
 
     # ----------------------------------------------
     # ÜBERSCHRIFT: Genre
