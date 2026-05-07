@@ -193,6 +193,10 @@ unsafe_allow_html=True
     artist_recs = get_recommendations_by_artist(result["artist"])
     
     seen_songs = set()
+
+    # Erkannten Song direkt blockieren
+    recognized_key = f"{result['artist']} - {result['title']}"
+    seen_songs.add(recognized_key)
     
     for song in artist_recs:
         key = f"{song['artist']} - {song['title']}"
