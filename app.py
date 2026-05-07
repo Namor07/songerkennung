@@ -82,18 +82,54 @@ if "result" not in st.session_state:
 # ==================================================
 # UI
 # ==================================================
-st.title("🎧 Song-Erkennung")
-st.write("Lade eine Audiodatei hoch, lasse diese erkennen und erhalte dein persönliches Musik-Wrapped. 🔥")
+# ==================================================
+# ZENTRIERTER HEADER / INPUT
+# ==================================================
+st.markdown("""
+<style>
+.center-box {
+    max-width: 600px;
+    margin: 60px auto 40px auto;
+    text-align: center;
+}
+.center-box h1 {
+    font-size: 48px;
+    font-weight: 800;
+}
+.center-box p {
+    font-size: 20px;
+    opacity: 0.95;
+}
+</style>
+""", unsafe_allow_html=True)
 
-uploaded_file = st.file_uploader(
-    "Audiodatei hochladen (MP3 oder WAV)",
-    type=["mp3", "wav"]
-)
+st.markdown("""
+<div class="center-box">
+    <h1>🎧 Song-Erkennung</h1>
+    <p>
+        Lade eine Audiodatei hoch, lasse diese erkennen und erhalte
+        dein persönliches Musik-Wrapped. 🔥
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+# -----------------------------
+# Upload + Button zentriert
+# -----------------------------
+col1, col2, col3 = st.columns([1, 2, 1])
+
+with col2:
+    uploaded_file = st.file_uploader(
+        "Audiodatei hochladen (MP3 oder WAV)",
+        type=["mp3", "wav"]
+    )
+
+    recognize_clicked = st.button("🎶 Song erkennen", use_container_width=True)
 
 # ==================================================
 # Song erkennen
 # ==================================================
-if st.button("Song erkennen"):
+if recognize_clicked:
     if not uploaded_file:
         st.warning("Bitte zuerst eine Audiodatei hochladen.")
     else:
