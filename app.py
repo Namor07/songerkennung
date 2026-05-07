@@ -19,40 +19,40 @@ st.markdown(
 """
 <style>
 .wrapped-section {
-    max-width: 760px;
-    margin: 0 auto 60px auto;
-    padding: 70px 40px;
-    border-radius: 28px;
+    max-width: 680px;          /* schmaler */
+    margin: 0 auto 40px auto;  /* weniger Abstand */
+    padding: 50px 34px;        /* kompakter */
+    border-radius: 24px;
     color: white;
 }
 
 .section-heading {
-    max-width: 760px;
-    margin: 80px auto 20px auto;
-    font-size: 32px;
+    max-width: 680px;
+    margin: 60px auto 16px auto;
+    font-size: 28px;
     font-weight: 800;
 }
 
 .wrapped-title {
-    font-size: 44px;
+    font-size: 36px;
     font-weight: 800;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .wrapped-subtitle {
-    font-size: 22px;
+    font-size: 20px;
     opacity: 0.95;
 }
 
 .song-meta {
-    font-size: 20px;
-    margin-top: 10px;
+    font-size: 18px;
+    margin-top: 6px;
 }
 
 .wrapped-cover {
-    max-width: 260px;
-    border-radius: 18px;
-    margin-top: 25px;
+    max-width: 220px;
+    border-radius: 16px;
+    margin-top: 20px;
 }
 </style>
 """,
