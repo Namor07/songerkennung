@@ -87,10 +87,16 @@ if "result" not in st.session_state:
 # ==================================================
 st.markdown("""
 <style>
-.center-box {
-    max-width: 600px;
-    margin: 60px auto 30px auto;
-    text-align: center;
+.center-box h1 {
+    font-size: 56px;   /* größer, aber nicht kitschig */
+    font-weight: 900;
+    margin-bottom: 10px;
+}
+
+.center-box p {
+    font-size: 22px;
+    opacity: 0.95;
+    line-height: 1.4;
 }
 
 .upload-box {
