@@ -91,12 +91,14 @@ st.markdown("""
     font-size: 56px;   /* größer, aber nicht kitschig */
     font-weight: 900;
     margin-bottom: 10px;
+    text-align: center;
 }
 
 .center-box p {
     font-size: 22px;
     opacity: 0.95;
     line-height: 1.4;
+    text-align: center;
 }
 
 .upload-box {
