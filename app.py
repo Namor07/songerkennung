@@ -83,22 +83,25 @@ if "result" not in st.session_state:
 # UI
 # ==================================================
 # ==================================================
-# ZENTRIERTER HEADER / INPUT
+# ZENTRIERTER HEADER / INPUT (schmal)
 # ==================================================
 st.markdown("""
 <style>
 .center-box {
     max-width: 600px;
-    margin: 60px auto 40px auto;
+    margin: 60px auto 30px auto;
     text-align: center;
 }
-.center-box h1 {
-    font-size: 48px;
-    font-weight: 800;
+
+.upload-box {
+    max-width: 420px;
+    margin: 0 auto;
 }
-.center-box p {
-    font-size: 20px;
-    opacity: 0.95;
+
+.small-button button {
+    padding: 6px 18px;
+    font-size: 16px;
+    border-radius: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -114,17 +117,26 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# Upload + Button zentriert
+# Upload schmal + Button klein
 # -----------------------------
-col1, col2, col3 = st.columns([1, 2, 1])
+col1, col2, col3 = st.columns([1, 1.4, 1])
 
 with col2:
+    st.markdown('<div class="upload-box">', unsafe_allow_html=True)
+
     uploaded_file = st.file_uploader(
         "Audiodatei hochladen (MP3 oder WAV)",
         type=["mp3", "wav"]
     )
 
-    recognize_clicked = st.button("🎶 Song erkennen", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    recognize_clicked = st.button("🎶 Song erkennen")
+
+    st.markdown(
+        "<style>.stButton>button {margin-top: 10px;}</style>",
+        unsafe_allow_html=True
+    )
 
 # ==================================================
 # Song erkennen
