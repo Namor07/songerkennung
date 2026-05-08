@@ -133,8 +133,8 @@ with col2:
     st.markdown('<div class="upload-box">', unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
-        "Audiodatei hochladen (MP3 oder WAV)",
-        type=["mp3", "wav"]
+        "Audiodatei hochladen (MP3)",
+        type=["mp3"]
     )
 
     st.markdown('</div>', unsafe_allow_html=True)
