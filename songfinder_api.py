@@ -133,7 +133,7 @@ def get_song_details_from_lastfm(title: str, artist: str) -> dict | None:
         "cover": cover
     }
 
-def get_recommendations_by_artist(artist: str, limit: int = 6) -> list[dict]:
+def get_recommendations_by_artist(artist: str, limit: int = 30) -> list[dict]:
     data = lastfm_request({
         "method": "artist.getTopTracks",
         "artist": artist,
@@ -151,7 +151,7 @@ def get_recommendations_by_artist(artist: str, limit: int = 6) -> list[dict]:
 
     return recs
 
-def get_recommendations_by_genre(genres: list[str], limit: int = 6) -> list[dict]:
+def get_recommendations_by_genre(genres: list[str], limit: int = 30) -> list[dict]:
     if not genres:
         return []
 
