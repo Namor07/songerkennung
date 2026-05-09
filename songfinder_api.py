@@ -12,7 +12,7 @@ LASTFM_BASE_URL = "https://ws.audioscrobbler.com/2.0/"
 def lastfm_request(params: dict) -> dict:
     params["api_key"] = LASTFM_API_KEY
     params["format"] = "json"
-    r = requests.get(LASTFM_BASE_URL, params=params, timeout=10)
+    r = requests.get(LASTFM_BASE_URL, params=params, timeout=20)
     return r.json()
 
 # --------------------------------------------------
