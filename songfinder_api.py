@@ -20,13 +20,19 @@ def lastfm_request(params: dict) -> dict:
 # --------------------------------------------------
 def recognize_song(uploaded_file):
     try:
+        uploaded_file.seek(0)               # ← EXTREM WICHTIG
+        audio_bytes = uploaded_file.read()  # ← echte Bytes
+
         r = requests.post(
             AUDD_API_URL,
-            files={"file": uploaded_file},
+            files={
+                "file": ("audio.mp3", audio_bytes)
+            },
             timeout=20
         )
         result = r.json().get("result")
-    except Exception:
+    except Exception as e:
+        print("AUDD ERROR:", e)
         return None
 
     if not result:
@@ -35,6 +41,9 @@ def recognize_song(uploaded_file):
     title = result.get("title")
     artist = result.get("artist")
     album = result.get("album")
+
+    if not title or not artist:
+        return None
 
     genres = get_genres_from_lastfm(title, artist)
     cover = get_cover_from_lastfm(title, artist)
