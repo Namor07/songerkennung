@@ -2,6 +2,7 @@ import requests
 import streamlit as st
 
 AUDD_API_URL = "https://api.audd.io/"
+AUDD_API_KEY = st.secrets.get("AUDD_API_KEY")   # ← WICHTIG
 LASTFM_API_KEY = st.secrets.get("LASTFM_API_KEY")
 
 LASTFM_BASE_URL = "https://ws.audioscrobbler.com/2.0/"
@@ -16,23 +17,34 @@ def lastfm_request(params: dict) -> dict:
     return r.json()
 
 # --------------------------------------------------
-# Song erkennen
+# Song erkennen (FIX)
 # --------------------------------------------------
 def recognize_song(uploaded_file):
+    if not AUDD_API_KEY:
+        st.error("AUDD API Key fehlt")
+        return None
+
     try:
-        uploaded_file.seek(0)               # ← EXTREM WICHTIG
-        audio_bytes = uploaded_file.read()  # ← echte Bytes
+        uploaded_file.seek(0)
+        audio_bytes = uploaded_file.read()
 
         r = requests.post(
             AUDD_API_URL,
+            data={
+                "api_token": AUDD_API_KEY,
+                "return": "spotify,apple_music"
+            },
             files={
                 "file": ("audio.mp3", audio_bytes)
             },
-            timeout=20
+            timeout=30
         )
-        result = r.json().get("result")
+
+        response = r.json()
+        result = response.get("result")
+
     except Exception as e:
-        print("AUDD ERROR:", e)
+        st.error(f"AUDD Fehler: {e}")
         return None
 
     if not result:
