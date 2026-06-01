@@ -1,7 +1,7 @@
 import random
 import streamlit as st
 from songfinder_api import (
-    recognize_song(uploaded_file),
+    recognize_song,
     get_recommendations_by_artist,
     get_recommendations_by_genre
 )
