@@ -34,38 +34,45 @@ def recognize_song(uploaded_file):
                 "api_token": AUDD_API_KEY,
                 "return": "spotify,apple_music"
             },
-            files={
-                "file": ("audio.mp3", audio_bytes)
-            },
+            files={"file": ("audio.mp3", audio_bytes)},
             timeout=30
         )
 
         response = r.json()
-        result = response.get("result")
+
+        # 🔴 WICHTIG: Debug-Ausgabe
+        st.write("🎧 AudD Antwort:", response)
 
     except Exception as e:
         st.error(f"AUDD Fehler: {e}")
         return None
 
+    result = response.get("result")
+
+    # ❗ explizite Fehlermeldung
     if not result:
+        error = response.get("error")
+        if error:
+            st.error(f"AudD Fehler: {error.get('error_message')}")
+        else:
+            st.warning("AudD konnte den Song nicht eindeutig erkennen.")
         return None
 
     title = result.get("title")
     artist = result.get("artist")
-    album = result.get("album")
 
     if not title or not artist:
+        st.warning("Song erkannt, aber Metadaten unvollständig.")
         return None
 
-    genres = get_genres_from_lastfm(title, artist)
-    cover = get_cover_from_lastfm(title, artist)
+    album = result.get("album")
 
     return {
         "title": title,
         "artist": artist,
         "album": album,
-        "genre": genres,
-        "cover": cover
+        "genre": get_genres_from_lastfm(title, artist),
+        "cover": get_cover_from_lastfm(title, artist)
     }
 
 # --------------------------------------------------
